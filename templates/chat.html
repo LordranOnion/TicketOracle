@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TicketOracle - AI Assistant</title>
+    <style>
+        :root { --accent: #00e5ff; --bg: #0f0f13; --card: #1c1c24; --text: #fff; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; height: 100vh; box-sizing: border-box; }
+        
+        header { text-align: center; margin-bottom: 20px; width: 100%; position: relative; }
+        h1 { font-size: 2rem; margin: 0; background: -webkit-linear-gradient(45deg, #00e5ff, #2979ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .back-btn { position: absolute; left: 0; top: 5px; color: #888; text-decoration: none; font-size: 0.9rem; }
+        .back-btn:hover { color: var(--accent); }
+
+        .chat-container { width: 100%; max-width: 800px; background: var(--card); border: 1px solid #333; border-radius: 12px; display: flex; flex-direction: column; height: 75vh; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .msg { max-width: 80%; padding: 12px 16px; border-radius: 8px; line-height: 1.4; font-size: 0.95rem; white-space: pre-wrap; }
+        
+        /* Message Bubbles */
+        .msg.user { background: #2979ff; align-self: flex-end; color: #fff; border-bottom-right-radius: 2px; }
+        .msg.bot { background: #333; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #444; }
+        .msg.sys-tool { font-family: 'Consolas', monospace; font-size: 0.8rem; background: #000; color: #888; align-self: flex-start; padding: 8px 12px; border: 1px dashed #444; margin-top: -10px; }
+
+        .input-area { padding: 15px; background: #16161e; border-top: 1px solid #333; display: flex; gap: 10px; }
+        input[type="text"] { flex: 1; padding: 12px; background: #000; color: white; border: 1px solid #444; border-radius: 6px; font-size: 1rem; }
+        input[type="text"]:focus { outline: none; border-color: var(--accent); }
+        button { padding: 0 20px; background: linear-gradient(90deg, #00e5ff, #2979ff); border: none; border-radius: 6px; color: #000; font-weight: bold; cursor: pointer; }
+        button:hover { opacity: 0.9; }
+        button:disabled { background: #555; color: #888; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<header style="max-width: 800px;">
+    <a href="/" class="back-btn">← Back to Events</a>
+    <h1>TicketOracle Assistant</h1>
+</header>
+
+<div class="chat-container">
+    <div style="padding: 10px 15px; background: #16161e; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 0.85rem; color: #888; font-weight: bold; letter-spacing: 1px;">ACTIVE MODEL:</span>
+        <select id="model-select" style="padding: 8px; background: #000; color: white; border: 1px solid #444; border-radius: 6px; font-size: 0.9rem; width: 60%; cursor: pointer;">
+            <option value="meta-llama/llama-3.3-70b-instruct">Llama 3.3 70B Instruct</option>
+            <option value="qwen/qwen3-coder">Qwen 3 Coder</option>
+            <option value="deepseek/deepseek-r1">DeepSeek R1</option>
+            <option value="openai/gpt-oss-120b">GPT-OSS 120B</option>
+            <option value="google/gemini-3-pro-preview">Gemini 3 Pro Preview</option>
+            <option value="openai/gpt-5.2">GPT 5.2</option>
+            <option value="anthropic/claude-opus-4.6">Claude Opus 4.6</option>
+        </select>
+    </div>
+
+    <div class="messages" id="chat-box">
+        <div class="msg bot">Hello! I'm TicketOracle. I can help you find upcoming concerts or check ticket prices. How can I help you today?</div>
+    </div>
+    
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off">
+        <button id="send-btn">Send</button>
+    </div>
+</div>
+
+<script>
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const modelSelect = document.getElementById('model-select'); // [NEW] Get model element
+
+    function appendMessage(text, sender) {
+        const div = document.createElement('div');
+        div.className = `msg ${sender}`;
+        div.textContent = text;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        const selectedModel = modelSelect.value; // [NEW] Read current model
+        
+        if (!text) return;
+
+        appendMessage(text, 'user');
+        userInput.value = '';
+        
+        userInput.disabled = true;
+        sendBtn.disabled = true;
+        modelSelect.disabled = true; // [NEW] Lock dropdown while fetching
+        sendBtn.textContent = '...';
+
+        try {
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                // [NEW] Inject model into the JSON payload
+                body: JSON.stringify({ message: text, model: selectedModel }) 
+            });
+            const data = await res.json();
+
+            if (data.tool_used) {
+                appendMessage(`[System] Executed: ${data.tool_used} via ${selectedModel.split('/')[1]}`, 'sys-tool');
+            }
+
+            appendMessage(data.response, 'bot');
+        } catch (err) {
+            appendMessage("Error connecting to server.", 'bot');
+        } finally {
+            userInput.disabled = false;
+            sendBtn.disabled = false;
+            modelSelect.disabled = false; // [NEW] Unlock dropdown
+            sendBtn.textContent = 'Send';
+            userInput.focus();
+        }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+</script>

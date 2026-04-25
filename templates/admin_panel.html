@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TicketMasterAI - Admin Console</title>
+    <style>
+        :root { --primary: #e91e63; --bg: #121212; --card: #1e1e1e; --text: #eee; --border: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+        
+        .navbar { background: #000; padding: 15px 40px; border-bottom: 1px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
+        .brand { font-size: 1.2rem; font-weight: bold; color: var(--primary); letter-spacing: 1px; }
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        
+        .panel { background: var(--card); border-radius: 8px; padding: 25px; margin-bottom: 30px; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .panel h3 { margin-top: 0; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; color: #888; font-size: 0.85rem; text-transform: uppercase; padding: 12px 8px; border-bottom: 2px solid var(--border); }
+        td { padding: 12px 8px; border-bottom: 1px solid var(--border); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #252525; }
+
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+        .badge-admin { background: #ff980022; color: #ff9800; border: 1px solid #ff9800; }
+        .badge-user { background: #4caf5022; color: #4caf50; border: 1px solid #4caf50; }
+        
+        button { cursor: pointer; padding: 8px 16px; border-radius: 4px; border: none; transition: 0.2s; font-weight: bold; }
+        .btn-danger { background: #f44336; color: white; opacity: 0.8; }
+        .btn-danger:hover { opacity: 1; }
+        .btn-add { background: var(--primary); color: white; margin-top: 15px; width: 100%; }
+        
+        .input-group { display: flex; gap: 10px; margin-top: 20px; }
+        input, select { flex: 1; background: #2a2a2a; border: 1px solid var(--border); padding: 10px; color: white; border-radius: 4px; }
+        input:focus { outline: 1px solid var(--primary); }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="brand">TICKETMASTER<span style="color:#fff">AI</span> // INTERNAL</div>
+    <div style="font-size: 0.9rem; color: #888;">Logged in as: <strong>admin</strong></div>
+</nav>
+
+<div class="container">
+    <div class="panel">
+        <h3>User Directory</h3>
+        <table id="users-table">
+            <thead>
+                <tr><th style="width: 50px;">ID</th><th>Username</th><th>Role</th><th>Actions</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        
+        <div class="input-group">
+            <input type="text" id="add-username" placeholder="New Username">
+            <select id="add-type" style="max-width: 120px;">
+                <option value="0">User</option>
+                <option value="1">Admin</option>
+            </select>
+            <button class="btn-add" style="width: auto;" onclick="addUser()">+ Add User</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>Event Database</h3>
+        <table id="events-table">
+            <thead>
+                <tr><th>Event</th><th>Date</th><th>City</th><th>Price (€)</th><th>Actions</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="input-group" style="flex-wrap: wrap;">
+            <input type="text" id="add-name" placeholder="Band/Event Name" style="flex: 2;">
+            <input type="date" id="add-date">
+            <input type="text" id="add-city" placeholder="City">
+            <input type="number" id="add-price" placeholder="€ Price" min="1">
+            <button class="btn-add" style="width: 100%;" onclick="addEvent()">Create Event</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- USERS LOGIC ---
+    function fetchUsers() {
+        fetch('/admin/users').then(r => r.json()).then(users => {
+            const tbody = document.querySelector('#users-table tbody');
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td style="color:#666; font-family: monospace;">#${u.id}</td> <td>${u.username}</td>
+                    <td><span class="badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">${u.is_admin ? "ADMIN" : "USER"}</span></td>
+                    <td>${!u.is_admin ? `<button class="btn-danger" onclick="deleteUser('${u.username}')">Remove</button>` : '<span style="color:#444; font-size:0.8rem">PROTECTED</span>'}</td>
+                </tr>
+            `).join('');
+        });
+    }
+
+    function addUser() {
+        const username = document.getElementById('add-username').value.trim();
+        const is_admin = document.getElementById('add-type').value === "1";
+        if(!username) return alert("Username required");
+        
+        fetch('/admin/users/add', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, is_admin})
+        }).then(r => r.json()).then(res => {
+            if(res.error) alert(res.error);
+            else { fetchUsers(); document.getElementById('add-username').value = ''; }
+        });
+    }
+
+    function deleteUser(username) {
+        if(!confirm(`Delete user ${username}?`)) return;
+        fetch('/admin/users/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username })
+        }).then(() => fetchUsers());
+    }
+
+    // --- EVENTS LOGIC ---
+    function fetchEvents() {
+        fetch('/admin/events').then(r => r.json()).then(events => {
+            const tbody = document.querySelector('#events-table tbody');
+            tbody.innerHTML = events.map(e => `
+                <tr>
+                    <td style="font-weight:500; color:#fff;">${e.name}</td>
+                    <td style="color:#aaa">${e.date}</td>
+                    <td>${e.city}</td>
+                    <td>€${e.price}</td>
+                    <td><button class="btn-danger" onclick='deleteEvent(${JSON.stringify(e.name)})'>Delete</button></td>
+                </tr>
+            `).join('');
+        });
+    }
+
+    function addEvent() {
+        const name = document.getElementById('add-name').value.trim();
+        const date = document.getElementById('add-date').value;
+        const city = document.getElementById('add-city').value.trim();
+        const price = parseFloat(document.getElementById('add-price').value);
+
+        if(!name || !date || !city || isNaN(price)) return alert("All fields required");
+
+        fetch('/admin/events/add', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, date, city, price})
+        }).then(() => {
+            fetchEvents();
+            document.getElementById('add-name').value = '';
+            document.getElementById('add-city').value = '';
+            document.getElementById('add-price').value = '';
+        });
+    }
+
+    function deleteEvent(name) {
+        if(!confirm("Remove this event?")) return;
+        fetch('/admin/events/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name: name })
+        }).then(() => fetchEvents());
+    }
+
+    fetchUsers(); 
+    fetchEvents();
+</script>
+</body>
+</html>
