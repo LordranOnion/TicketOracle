@@ -1,4 +1,4 @@
-# TicketOracle2
+# TicketOracle
 
 A Flask web application and AI chat assistant for music event discovery, built as a research testbed for **Server-Side Request Forgery (SSRF) via LLM-powered agents**.
 
