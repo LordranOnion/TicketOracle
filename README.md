@@ -2,6 +2,8 @@
 
 A Flask web application and AI chat assistant for music event discovery, built as a research testbed for **Server-Side Request Forgery (SSRF) via LLM-powered agents**.
 
+<img width="1438" height="939" alt="image" src="https://github.com/user-attachments/assets/852c29ee-be35-41cc-8619-4d3ffc892ba5" />
+
 The surface presentation is a legitimate-looking ticketing platform: upcoming concerts, ticket prices, a reviews system, and an AI assistant. Underneath, the assistant's HTTP fetch tool is deliberately unrestricted, making it a controlled environment for studying how LLM agents can be manipulated into issuing server-side requests against internal infrastructure.
 
 > **Disclaimer.** This application is intentionally insecure. Run it locally for research purposes only. Never expose it to the internet.
