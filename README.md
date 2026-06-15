@@ -74,7 +74,7 @@ The AI assistant uses OpenRouter as its API gateway. Any model available on Open
 | `/events/<id>/reviews` | GET | Reviews for an event | Public |
 | `/events/<id>/reviews` | POST | Submit a review | Public |
 | `/chat` | POST | AI agent endpoint | Public |
-| `/admin/users` | GET | All users with phone numbers and admin flag | Localhost |
+| `/admin/users` | GET | All users with phone numbers, addresses, and admin flag | Localhost |
 | `/admin/events` | GET | Full event catalogue | Localhost |
 | `/admin/users/add` | GET | Add a new user via query params | Localhost |
 | `/admin/events/add` | GET | Add a new event via query params | Localhost |
