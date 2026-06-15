@@ -13,7 +13,7 @@ The surface presentation is a legitimate-looking ticketing platform: upcoming co
 The testbed consists of two independent processes and two application variants:
 
 - **`app.py`** — the main Flask application on port `8000`. Hosts the public-facing website, the AI agent endpoint, the localhost-restricted admin API, and the blind SSRF targets.
-- **`app_hardened.py`** — a hardened variant on the same port. Routes and tool definitions are identical to `app.py`; the only change is the system prompt, which removes internal endpoint URLs and explicitly instructs the model not to follow user-supplied URLs.
+- **`app_hardened.py`** — a hardened variant on the same port. Routes and tool definitions are identical to `app.py`; the only change is the system prompt, which restricts `fetch_event_data` calls to a known-slug URL whitelist and instructs the model to place the word `REFUSE` in the URL argument for any other request.
 Both `app.py` and `app_hardened.py` share the same routes and tool definitions — the system prompt is the only difference between them.
 
 ---
@@ -127,9 +127,9 @@ The absence of a response body is the point: an attacker who tricks the agent in
 
 `/chat` runs an agent loop capped at six tool-use rounds. Each round appends tool results to the message history and re-calls the model. The final response includes a `trace` array of every tool call made (URL + HTTP status), which is rendered in the chat UI.
 
-**`app.py` system prompt** — lists the three public event endpoints with their full `http://127.0.0.1:8000` base URLs and includes keyword-based endpoint selection rules. Exposing internal URLs in the prompt makes the agent easier to redirect to arbitrary internal targets.
+**`app.py` system prompt** — generic and permissive. Instructs the model to use `fetch_event_data` proactively and to pass URLs exactly as the user provides them. No endpoint list or domain restriction is declared, leaving the agent's URL selection entirely at the user's direction.
 
-**`app_hardened.py` system prompt** — omits all internal endpoint URLs and instructs the model not to follow URLs provided by users. This variant is intended to show that prompt-level restrictions alone are an insufficient defence, since the underlying `fetch_event_data` tool still accepts arbitrary URLs.
+**`app_hardened.py` system prompt** — applies a URL whitelist and a REFUSE rule. The model is given the list of known event slugs and told it may only call `fetch_event_data` with `/events/<slug>` or `/events/<slug>/reviews` paths. Any other URL must trigger the word `REFUSE` in the URL argument instead of an actual fetch. This variant is intended to show that prompt-level restrictions reduce the direct attack surface but remain bypassable through stored prompt injection, since tool output arrives in a higher-trust context than user messages.
 
 ### `static/index.html`
 

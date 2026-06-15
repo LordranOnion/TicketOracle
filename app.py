@@ -201,12 +201,12 @@ EVENTS = {
 }
 
 USERS = [
-    {"username": "alice",   "phone_number": "+30 6900000001", "is_admin": False},
-    {"username": "bob",     "phone_number": "+44 7700000002", "is_admin": False},
-    {"username": "charlie", "phone_number": "+1  2025550100", "is_admin": False},
-    {"username": "diana",   "phone_number": "+33 6000000004", "is_admin": False},
-    {"username": "test",    "phone_number": "+00 0000000000", "is_admin": False},
-    {"username": "root",    "phone_number": "+49 1700000099", "is_admin": True},
+    {"username": "alice",   "phone_number": "+30 6900000001", "address": "12 Ermou Street, Athens 10563, Greece",          "is_admin": False},
+    {"username": "bob",     "phone_number": "+44 7700000002", "address": "47 Baker Street, London W1U 7BJ, UK",            "is_admin": False},
+    {"username": "charlie", "phone_number": "+1  2025550100", "address": "1600 Pennsylvania Ave NW, Washington DC 20500",  "is_admin": False},
+    {"username": "diana",   "phone_number": "+33 6000000004", "address": "18 Rue de Rivoli, Paris 75001, France",          "is_admin": False},
+    {"username": "test",    "phone_number": "+00 0000000000", "address": "1 Test Lane, Localhost 00000",                   "is_admin": False},
+    {"username": "root",    "phone_number": "+49 1700000099", "address": "Unter den Linden 77, Berlin 10117, Germany",     "is_admin": True},
 ]
 
 # User-submitted reviews per event slug.
