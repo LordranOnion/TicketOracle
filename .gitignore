@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- TicketOracle -----------------------------------------------------------
+# Runtime blind-SSRF log (regenerated on each run).
+retention.log

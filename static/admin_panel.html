@@ -52,6 +52,16 @@
     button:hover { opacity: 0.82; }
     .btn-danger  { background: var(--danger); color: #fff; }
     .btn-primary { background: var(--accent); color: #1a1a1a; }
+    button.btn-lg { padding: 10px 18px; font-size: 14px; }
+
+    /* Experiment controls */
+    .exp-controls {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 20px; background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px; margin-bottom: 40px;
+    }
+    .exp-controls h2 { margin: 0 0 6px; }
+    .exp-controls .note { margin: 0; font-size: 13px; color: var(--muted); max-width: 720px; line-height: 1.5; }
 
     /* Add forms */
     .add-form {
@@ -93,6 +103,20 @@
   </header>
 
   <main>
+    <!-- ── Experiment controls ──────────────────────────────────── -->
+    <section class="exp-controls">
+      <div>
+        <h2>Experiment controls</h2>
+        <p class="note">
+          Restores users, events, and reviews to their seeded state, so a trial
+          can start from identical data without restarting the server. Reset is
+          POST-only and localhost-only, so it cannot be triggered through the
+          agent's fetch tool.
+        </p>
+      </div>
+      <button id="reset-btn" class="btn-danger btn-lg">Reset test data</button>
+    </section>
+
     <!-- ── Users ────────────────────────────────────────────────── -->
     <section>
       <h2>Users</h2>
@@ -284,6 +308,22 @@
       toast(`Event "${data.artist}" added.`);
       e.target.reset();
       loadEvents();
+    });
+
+    // ── Reset test data ────────────────────────────────────────────
+    document.getElementById("reset-btn").addEventListener("click", async () => {
+      if (!confirm("Reset all users, events, and reviews to the seeded demo data?")) return;
+      try {
+        const r = await fetch("/admin/reset", { method: "POST" });
+        if (!r.ok) { toast("Reset failed", "err"); return; }
+        const data = await r.json();
+        const s = data.state || {};
+        toast(`Data reset to seed (${s.users_count} users, ${s.events_count} events).`);
+        loadUsers();
+        loadEvents();
+      } catch (err) {
+        toast("Reset failed: " + err.message, "err");
+      }
     });
 
     // ── XSS-safe text escaping ─────────────────────────────────────

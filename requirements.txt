@@ -1,4 +1,8 @@
-flask>=3.0
-requests>=2.31
-openai>=1.0
-python-dotenv>=1.0
+# Pinned for reproducibility. These are the versions the experiment harness was
+# verified against; record the exact versions you actually run with (for
+# example `pip freeze > experiments/requirements.lock.txt`) alongside your
+# results so the tables in the paper can be reproduced.
+flask==3.1.3
+requests==2.34.2
+openai==3.8.0
+python-dotenv==1.2.3

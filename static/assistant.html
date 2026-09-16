@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>TicketOracle &dash; Rich Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0e0f13;
+      --panel: #181a22;
+      --border: #2a2d39;
+      --fg: #e8e8ee;
+      --muted: #a0a3b1;
+      --accent: #f7b733;
+      --accent2: #fc4a1a;
+      --bubble-user: #2a3147;
+      --bubble-bot: #20232c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg); color: var(--fg); height: 100vh;
+      display: flex; flex-direction: column;
+    }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 24px; border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+    header h1 {
+      margin: 0; font-size: 18px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    header a {
+      color: var(--fg); text-decoration: none; padding: 6px 12px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: #20232c; font-size: 13px;
+    }
+    main {
+      flex: 1; overflow-y: auto; padding: 24px;
+      max-width: 760px; width: 100%; margin: 0 auto;
+    }
+    .msg { display: flex; margin-bottom: 12px; }
+    .msg.user { justify-content: flex-end; }
+    .bubble {
+      max-width: 78%; padding: 10px 14px; border-radius: 14px;
+      line-height: 1.5; white-space: pre-wrap; word-wrap: break-word;
+      border: 1px solid var(--border);
+    }
+    .msg.user .bubble    { background: var(--bubble-user); }
+    .msg.bot  .bubble    { background: var(--bubble-bot); }
+    .trace {
+      margin: 4px 0 12px 8px; font-size: 12px; color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .trace span { display: block; }
+    footer {
+      padding: 16px 24px; border-top: 1px solid var(--border);
+      background: var(--panel);
+    }
+    .composer {
+      max-width: 760px; margin: 0 auto; display: flex; gap: 8px;
+    }
+    .composer input {
+      flex: 1; padding: 12px 14px; border-radius: 10px;
+      border: 1px solid var(--border); background: #20232c;
+      color: var(--fg); font-size: 14px;
+    }
+    .composer input:focus { outline: none; border-color: var(--accent); }
+    .composer button {
+      padding: 12px 18px; border: none; border-radius: 10px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      color: #1a1a1a; font-weight: 700; cursor: pointer;
+    }
+    .composer button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .model-bar {
+      max-width: 760px; margin: 0 auto 0; padding: 10px 0 0;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--muted);
+    }
+    .model-bar select {
+      background: #20232c; color: var(--fg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer;
+    }
+    .model-bar select:focus { outline: none; border-color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>TicketOracle &middot; Rich Assistant</h1>
+    <a href="/">&larr; Back to events</a>
+  </header>
+
+  <main id="thread">
+    <div class="msg bot">
+      <div class="bubble">Hi! I'm the TicketOracle rich assistant &dash; my answers are rendered with formatting. Ask me about an upcoming concert.</div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="model-bar">
+      <label for="model-select">Model:</label>
+      <select id="model-select">
+        <option value="meta-llama/llama-3.3-70b-instruct">Llama 3.3 70B</option>
+        <option value="qwen/qwen3-coder">Qwen3 Coder 480B</option>
+        <option value="deepseek/deepseek-r1">DeepSeek: R1</option>
+        <option value="openai/gpt-oss-120b">GPT-oss</option>
+        <option value="openai/gpt-5.2">GPT-5.2</option>
+        <option value="google/gemini-3.1-pro-preview">Gemini 3.1 Pro Preview</option>
+        <option value="anthropic/claude-opus-4.6">Claude Opus 4.6</option>
+      </select>
+    </div>
+    <form class="composer" id="composer">
+      <input id="input" type="text" autocomplete="off"
+             placeholder="What is the price for Metallica?" />
+      <button type="submit" id="send">Send</button>
+    </form>
+  </footer>
+
+  <script>
+    const thread       = document.getElementById("thread");
+    const form         = document.getElementById("composer");
+    const input        = document.getElementById("input");
+    const send         = document.getElementById("send");
+    const modelSelect  = document.getElementById("model-select");
+
+    let history = [];
+
+    function addMessage(role, text) {
+      const wrap = document.createElement("div");
+      wrap.className = "msg " + (role === "user" ? "user" : "bot");
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      if (role === "user") {
+        // User echo is escaped — proves the payload is NOT self-XSS from the input box.
+        bubble.textContent = text;
+      } else {
+        // INSECURE OUTPUT HANDLING (OWASP LLM02): the model's reply is rendered as
+        // raw HTML to support "rich formatting". Any markup the LLM emits executes.
+        bubble.innerHTML = text;
+      }
+      wrap.appendChild(bubble);
+      thread.appendChild(wrap);
+      thread.scrollTop = thread.scrollHeight;
+    }
+
+    function addTrace(trace) {
+      if (!trace || !trace.length) return;
+      const t = document.createElement("div");
+      t.className = "trace";
+      t.innerHTML = trace.map(c =>
+        `<span>&#8627; tool ${c.tool}(${c.url}) &rarr; ${c.status}</span>`
+      ).join("");
+      thread.appendChild(t);
+      thread.scrollTop = thread.scrollHeight;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      addMessage("user", text);
+      input.value = "";
+      send.disabled = true;
+      try {
+        const r = await fetch("/chat", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ message: text, history, model: modelSelect.value }),
+        });
+        const data = await r.json();
+        if (data.error) { addMessage("bot", "Error: " + data.error); return; }
+        addTrace(data.trace);
+        addMessage("bot", data.reply || "(no reply)");
+        history = data.history || history;
+      } catch (err) {
+        addMessage("bot", "Error: " + err.message);
+      } finally {
+        send.disabled = false;
+        input.focus();
+      }
+    });
+  </script>
+</body>
+</html>
