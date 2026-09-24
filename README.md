@@ -285,9 +285,11 @@ An attacker posts a malicious review containing an injection payload. A victim w
 
 ---
 
-### 7. Insecure Output Handling — LLM-to-XSS (LLM02)
+### SP. Insecure Output Handling — LLM2XSS
 
 A special case showing the testbed generalises beyond SSRF: a stored injection payload can steer the model into emitting HTML/JavaScript that, rendered raw by the `/assistant` page (`innerHTML`), executes in the victim's browser as stored XSS.
+
+<img width="979" height="1278" alt="image" src="https://github.com/user-attachments/assets/4c101815-146a-4ade-b629-a0ecd527f3b9" />
 
 ---
 
