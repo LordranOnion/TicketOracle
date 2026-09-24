@@ -285,6 +285,12 @@ Shows that a credential gate does not stop a confused-deputy request once the ag
 
 ---
 
+### 7. Insecure Output Handling — LLM-to-XSS (LLM02)
+
+A special case showing the testbed generalises beyond SSRF: a stored injection payload can steer the model into emitting HTML/JavaScript that, rendered raw by the `/assistant` page (`innerHTML`), executes in the victim's browser as stored XSS.
+
+---
+
 ## Reproducibility
 
 The study is run as a set of **manual trials** through the chat UI (each trial can also be issued as a scripted `POST /chat`). This section documents the fixed conditions, the state-reset protocol, the exact procedure, and how every reported number is derived, so the tables can be reproduced by repeating the trials. Because the models are hosted and non-deterministic — and OpenRouter may route a model name to different upstream providers between calls — reproduction is expected to match within sampling variation rather than bit-for-bit; the resolved model and provider are returned in each `/chat` response's `meta` field for auditing.
